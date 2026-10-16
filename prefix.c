@@ -1,0 +1,2 @@
+DEFINE_UI_PARAMS(Blend, Blend, DCTLUI_SLIDER_FLOAT, 1.00, 0.00, 1.00, 0.01)
+DEFINE_UI_PARAMS(FootageSel, Footage, DCTLUI_COMBO_BOX, 0, {FF, APSC15, APSC16, MFT}, {Full Frame, APS-C 1.52, APS-C 1.61, Micro Four Thirds})

@@ -10,7 +10,12 @@ The output is a single DCTL containing all profiles found in the `lcp` directory
 
 ### Browser
 
-Open `web/index.html` in any browser, drag your `.lcp` files in, and download the generated DCTL. Parsing happens in the browser: the files never leave your machine, and no Python is needed.
+Open the page in any browser:
+
+- live: <https://ayqwerty.github.io/lcp2dctl/>
+- locally: `web/index.html`
+
+Drag your `.lcp` files in and download the generated DCTL. Parsing happens in the browser: the files never leave your machine, and no Python is needed.
 
 ### Command line
 

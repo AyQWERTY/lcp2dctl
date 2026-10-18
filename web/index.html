@@ -56,6 +56,39 @@
                     Resolve/LUT/DCTL</code
                 >
             </p>
+
+            <section class="how">
+                <h2>How to use in Resolve</h2>
+                <ul>
+                    <li>Add the DCTL as a node on the color page.</li>
+                    <li>
+                        Place it before any grading:
+                        <strong>Group pre-clip/Clip</strong>. The correction
+                        must be applied to the untouched image, not after color.
+                    </li>
+                    <li>
+                        Set the node to <strong>linear gamma</strong>: right
+                        click the node &rarr; Gamma &rarr; Linear. Without this
+                        the correction will be wrong.
+                    </li>
+                </ul>
+                <h3>Controls</h3>
+                <ul>
+                    <li>
+                        <strong>Profile</strong> &mdash; lens and focal length
+                        preset, built from your own profiles.
+                    </li>
+                    <li>
+                        <strong>Footage</strong> &mdash; sensor format the clip
+                        was shot in: Full Frame, APS-C 1.52, APS-C 1.61, Micro
+                        Four Thirds. Scales the profile to the capture format.
+                    </li>
+                    <li>
+                        <strong>Blend</strong> &mdash; correction amount. 1.0 is
+                        the full Adobe correction, 0.0 is none.
+                    </li>
+                </ul>
+            </section>
         </main>
 
         <script type="module" src="ui.js"></script>

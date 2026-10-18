@@ -208,3 +208,30 @@ code {
 .error-text {
     color: var(--error-text);
 }
+
+.how {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.how h2 {
+    font-size: 15px;
+    margin: 0 0 8px;
+}
+
+.how h3 {
+    font-size: 13px;
+    margin: 12px 0 6px;
+}
+
+.how ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.how li {
+    margin: 4px 0;
+}

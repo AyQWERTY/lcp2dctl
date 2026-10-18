@@ -11,6 +11,7 @@ const OUTPUT_NAME = "Vignette Compensation.dctl";
 
 const fileInput = document.getElementById("files");
 const dropZone = document.getElementById("drop");
+const note = document.getElementById("note");
 const list = document.getElementById("list");
 const summary = document.getElementById("summary");
 const downloadButton = document.getElementById("download");
@@ -84,6 +85,7 @@ function render() {
   // buildNodes sorts records in place, so the DOM order and the combo box order match.
   const nodes = buildNodes(records);
 
+  note.hidden = records.length === 0;
   list.textContent = "";
   for (const record of records) list.appendChild(rowFor(record));
 

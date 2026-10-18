@@ -28,6 +28,24 @@
                 Drag <code>.lcp</code> files here, or click to choose
             </button>
 
+            <div class="note" id="note" hidden>
+                <strong>Why the numbers differ from the lens name</strong>
+                <ul>
+                    <li>
+                        Focal length and aperture printed on a lens are rounded
+                        marketing values. The values below come straight from
+                        the Adobe profile, so they are the exact figures the
+                        correction was measured against.
+                    </li>
+                    <li>
+                        Roughly half of Adobe profiles only describe distortion,
+                        so
+                        <span class="error-text">&#10060;</span> is usually
+                        normal, not a bug.
+                    </li>
+                </ul>
+            </div>
+
             <ul id="list" class="list"></ul>
 
             <div class="footer">
@@ -36,13 +54,6 @@
                 </button>
                 <span id="summary" class="summary">No profiles loaded</span>
             </div>
-
-            <p class="hint">
-                Note: roughly half of Adobe profiles only describe distortion,
-                so
-                <span class="error-text">&#10060;</span> is usually normal, not
-                a bug.
-            </p>
 
             <p class="hint">
                 <strong>Where to put</strong><br />

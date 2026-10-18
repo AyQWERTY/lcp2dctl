@@ -115,6 +115,26 @@ code.copy.copied::after {
     font-size: 12px;
 }
 
+.note {
+    margin: 0 0 10px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.note ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+}
+
+.note li {
+    margin: 4px 0;
+}
+
 .list {
     list-style: none;
     margin: 0;

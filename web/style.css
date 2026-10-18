@@ -178,6 +178,25 @@ code {
     font-style: italic;
 }
 
+.site-footer {
+    display: flex;
+    justify-content: center;
+    padding: 0 20px 24px;
+}
+
+.repo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.repo:hover {
+    color: var(--accent);
+}
+
 #download {
     background: var(--accent);
     color: #fff;

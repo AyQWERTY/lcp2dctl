@@ -109,6 +109,17 @@ function download() {
 
 fileInput.addEventListener("change", (event) => addFiles(event.target.files));
 
+for (const path of document.querySelectorAll(".copy")) {
+  path.addEventListener("click", () => {
+    navigator.clipboard
+      .writeText(path.textContent.replace(/\s+/g, " ").trim())
+      .then(() => {
+        path.classList.add("copied");
+        setTimeout(() => path.classList.remove("copied"), 1200);
+      });
+  });
+}
+
 dropZone.addEventListener("click", () => fileInput.click());
 
 dropZone.addEventListener("dragover", (event) => {

@@ -19,17 +19,29 @@ WARN = "warning"
 
 MSG_NOT_LCP = "Not a valid LCP file"
 MSG_NO_VIGNETTE = "No vignette model in profile"
-MSG_NO_FOCAL = "FocalLength missing \u2014 cannot determine focal length"
+MSG_NO_FOCUS = "Vignette entry has no focus distance or aperture"
+MSG_NO_FX = "Vignette model has no FocalLengthX"
+MSG_NO_FOCAL = "FocalLength missing \u2014 node named from profile name"
 MSG_PARTIAL_VIGNETTE = "No vignette model for some focal lengths"
 MSG_DEGENERATE = "Degenerate vignette polynomial for some focal lengths"
 MSG_NO_SFF = "SensorFormatFactor missing \u2014 assumed 1.0"
 MSG_NO_DIMS = "Image dimensions missing \u2014 assumed 3:2 frame"
+
+# A prime carries one true focal length (measured at infinity focus), repeated as
+# slightly different effective values per focus distance. When every focal length in
+# a profile sits within this ratio of the largest one, it is a single prime.
+PRIME_SPREAD_RATIO = 0.10
 
 # Sensor badge bands. SFF is written to the DCTL rounded to one decimal, so the
 # badge is derived from the same rounded value and can never disagree with it.
 SFF_FULL_FRAME_MAX = 1.05
 SFF_APSC_MAX = 1.8
 SFF_MFT_MAX = 2.2
+
+
+def roundFocal(value):
+    # Mirror JS Math.round: halves always go up, not to even.
+    return int(value + 0.5)
 
 
 def vignetteIsBad(a1, a2, a3, rhoMax):
@@ -112,11 +124,16 @@ def parseProfile(path, fileName):
     if not isinstance(seq, list):
         seq = [seq]
 
-    groups = defaultdict(list)
+    # Key is the focal length in mm when the profile states one, otherwise FocalLengthX
+    # (focal length in image-width units), which is the only focal identifier left.
+    groups = {}
+    allFocals = set()
     name = ""
     camera = ""
     sff = None
-    focallessVignette = 0
+    hasVignette = False
+    missingFocus = 0
+    missingFx = 0
 
     for entry in seq:
         desc = entry.get("rdf:Description") if isinstance(entry, dict) else None
@@ -132,35 +149,67 @@ def parseProfile(path, fileName):
         if sff is None:
             sff = desc.get("@stCamera:SensorFormatFactor")
 
+        model, perspective = vignetteParams(desc)
         rawFocal = desc.get("@stCamera:FocalLength")
+        if rawFocal is not None:
+            allFocals.add(float(rawFocal))
+        if model is None or perspective is None:
+            continue
+        hasVignette = True
+
         focus = desc.get("@stCamera:FocusDistance")
         aperture = desc.get("@stCamera:ApertureValue")
-        if rawFocal is None:
-            if vignetteParams(desc)[0] is not None:
-                focallessVignette += 1
-            continue
         if focus is None or aperture is None:
+            missingFocus += 1
             continue
 
-        groups[float(rawFocal)].append((float(focus), float(aperture), desc))
+        fx = model.get("@stCamera:FocalLengthX") or perspective.get(
+            "@stCamera:FocalLengthX"
+        )
+        if rawFocal is None:
+            if fx is None:
+                missingFx += 1
+                continue
+            key = float(fx)
+            hasFocal = False
+        else:
+            key = float(rawFocal)
+            hasFocal = True
+        if key in groups:
+            groups[key][1].append((float(focus), float(aperture), desc))
+        else:
+            groups[key] = [hasFocal, [(float(focus), float(aperture), desc)]]
 
     warnings = []
     focals = []
     nodes = []
     degenerate = False
     missingDims = 0
+    focalLess = False
+    usableFocals = {}
 
-    for focal_mm in sorted(groups):
-        usable = [(f, a, d) for f, a, d in groups[focal_mm] if vignetteParams(d)[0]]
-        if not usable:
-            focals.append((focal_mm, False, None))
-            continue
+    # A prime is one focal length sampled at several focus distances: when every
+    # focal value in the profile sits within PRIME_SPREAD_RATIO of the largest one,
+    # they are all the same focal length and collapse into a single node.
+    keys = sorted(groups)
+    if len(keys) > 1 and (keys[-1] - keys[0]) / keys[-1] < PRIME_SPREAD_RATIO:
+        clusters = [keys]
+    else:
+        # Otherwise each focal value is a distinct zoom position; positions that
+        # round to the same integer share one node.
+        byFocal = {}
+        for key in keys:
+            byFocal.setdefault(roundFocal(key), []).append(key)
+        clusters = [byFocal[r] for r in sorted(byFocal)]
 
+    for cluster in clusters:
+        key = cluster[-1]
+        label = f"{roundFocal(key)}mm" if any(groups[k][0] for k in cluster) else None
+        entries = [e for k in cluster for e in groups[k][1]]
         # widest aperture at infinity focus
-        focus, aperture, desc = max(usable, key=lambda t: (t[0], -t[1]))
+        focus, aperture, desc = max(entries, key=lambda t: (t[0], -t[1]))
         model, perspective = vignetteParams(desc)
         if model is None or perspective is None:
-            focals.append((focal_mm, False, None))
             continue
 
         a1 = float(model["@stCamera:VignetteModelParam1"])
@@ -174,7 +223,11 @@ def parseProfile(path, fileName):
         )
         nodeSff = float(sff) if sff is not None else 1.0
         if fx is None:
-            fx = focal_mm * nodeSff / 36.0
+            # A focal-less profile has no focal length to fall back on: FocalLengthX is
+            # the only scale it carries, so without it the model cannot be used.
+            if label is None:
+                continue
+            fx = key * nodeSff / 36.0
         fx = float(fx)
 
         cx = float(perspective.get("@stCamera:ImageXCenter", "0.5"))
@@ -195,11 +248,13 @@ def parseProfile(path, fileName):
 
         if vignetteIsBad(a1, a2, a3, rhoMax):
             degenerate = True
-            focals.append((focal_mm, False, None))
             continue
 
-        focals.append((focal_mm, True, aperture))
-        prettyName = f"{name}  \u2014 {focal_mm:g}mm"
+        if label is None:
+            focalLess = True
+        else:
+            usableFocals[key] = aperture
+        prettyName = f"{name}  \u2014 {label}" if label else name
         nodes.append(
             {
                 "code": re.sub(r"[^0-9A-Za-z]", "_", prettyName),
@@ -215,16 +270,43 @@ def parseProfile(path, fileName):
             }
         )
 
-    if not nodes:
-        if focallessVignette:
-            warnings.append((ERROR, MSG_NO_FOCAL))
+    # The display list mirrors the node clusters; focal lengths listed by the profile
+    # without a vignette entry are shown struck out, unless an integer focal length
+    # for them already appears.
+    reps = set()
+    for cluster in clusters:
+        key = cluster[-1]
+        reps.add(roundFocal(key))
+        if key in usableFocals:
+            focals.append((key, True, usableFocals[key]))
         else:
+            focals.append((key, False, None))
+    for focal_mm in sorted(allFocals):
+        if roundFocal(focal_mm) in reps:
+            continue
+        reps.add(roundFocal(focal_mm))
+        focals.append((focal_mm, False, None))
+    focals.sort(key=lambda t: t[0])
+
+    if not nodes:
+        if not hasVignette:
             warnings.append((ERROR, MSG_NO_VIGNETTE))
+        elif degenerate:
+            warnings.append((ERROR, MSG_DEGENERATE))
+        else:
+            if missingFocus:
+                warnings.append((ERROR, MSG_NO_FOCUS))
+            if missingFx:
+                warnings.append((ERROR, MSG_NO_FX))
+            if not missingFocus and not missingFx:
+                warnings.append((ERROR, MSG_NO_VIGNETTE))
     else:
         if any(not ok for _, ok, _ in focals):
             warnings.append((ERROR, MSG_PARTIAL_VIGNETTE))
         if degenerate:
             warnings.append((ERROR, MSG_DEGENERATE))
+        if focalLess:
+            warnings.append((WARN, MSG_NO_FOCAL))
     if sff is None:
         warnings.append((WARN, MSG_NO_SFF))
     if nodes and missingDims == len(nodes):
@@ -269,7 +351,7 @@ def printRecords(records):
         print(f"[{record['badge']}] {record['name']}")
         parts = []
         for focal_mm, ok, aperture in record["focals"]:
-            label = f"{focal_mm:g}mm" + (f" f/{aperture:.1f}" if ok else "")
+            label = f"{roundFocal(focal_mm)}mm" + (f" f/{aperture:.1f}" if ok else "")
             parts.append(label if ok else f"[{label}]")
         if parts:
             print("  " + " \u2022 ".join(parts))

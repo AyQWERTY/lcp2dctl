@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>LCP2DCTL &ndash; Lens Vignetting Correction</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <main>
+            <h1>Correct vignetting in Resolve with Adobe LCP</h1>
+
+            <p class="source">
+                <strong>Where to find</strong><br />
+                <span class="os">Windows</span>
+                <code>C:\ProgramData\Adobe\CameraRaw\LensProfiles\1.0</code
+                ><br />
+                <span class="os">macOS</span>
+                <code
+                    >/Library/Application
+                    Support/Adobe/CameraRaw/LensProfiles/1.0</code
+                >
+            </p>
+
+            <input type="file" id="files" accept=".lcp" multiple hidden />
+            <button class="drop" id="drop" type="button">
+                Drag <code>.lcp</code> files here, or click to choose
+            </button>
+
+            <ul id="list" class="list"></ul>
+
+            <div class="footer">
+                <button id="download" type="button" disabled>
+                    Download .dctl
+                </button>
+                <span id="summary" class="summary">No profiles loaded</span>
+            </div>
+
+            <p class="hint">
+                Note: roughly half of Adobe profiles only describe distortion,
+                so
+                <span class="error-text">&#10060;</span> is usually normal, not
+                a bug.
+            </p>
+
+            <p class="hint">
+                <strong>Where to put</strong><br />
+                <span class="os">Windows</span>
+                <code
+                    >C:\ProgramData\Blackmagic Design\DaVinci
+                    Resolve\Support\LUT\DCTL</code
+                ><br />
+                <span class="os">macOS</span>
+                <code
+                    >/Library/Application Support/Blackmagic Design/DaVinci
+                    Resolve/LUT/DCTL</code
+                >
+            </p>
+        </main>
+
+        <script type="module" src="ui.js"></script>
+    </body>
+</html>
